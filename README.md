@@ -18,13 +18,13 @@ A simple Python script that uses the current weather to automatically update you
 ## Usage
 1. Ensure you have Python 3 and the `requests` library:
 2. Install Lively Wallpaper (Windows only)
-   2.1. Go to the Lively GitHub Releases Page
-   2.2. Download the latest .exe installer under Assets and run the installer
+   - Go to the Lively GitHub Releases Page
+   - Download the latest .exe installer under Assets and run the installer
 4. Run python weather_wallpaper.py in bash
 5. On first run, the script will ask if you want to use your approximate location based on your IP address.
-   5.1. If you say yes, your coordinates will be automatically fetched and saved to your computer.
-   5.2. If you say no, the program will close.
-6. The script will detect your current weather every 90 seconds and automatically change your wallpaper to match it using live web backgrounds.
+	- If you say yes, your coordinates will be automatically fetched and saved to your computer.
+   - If you say no, the program will close.
+7. The script will detect your current weather every 90 seconds and automatically change your wallpaper to match it using live web backgrounds.
 
 ## Future ideas
 - Add seasonal themes
