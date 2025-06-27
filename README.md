@@ -7,10 +7,9 @@ A simple Python script that uses the current weather to automatically update you
 *** ONLY AVAILABLE ON Windows --- Linux Coming Soon ***
 
 ## Features
-- Fetches current weather using OpenWeatherMap API
-- Maps weather conditions to live video URLs
+- Fetches current weather using available API
+- Maps weather conditions to video URLs
 - Sets wallpaper via Lively's CLI
-- Cross-platform logic (tested on Windows 10)
 
 ## Requirements
 - [Lively Wallpaper] (https://github.com/rocksdanister/lively/releases) (Available on Microsoft Store)
