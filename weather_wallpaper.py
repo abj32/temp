@@ -1,4 +1,5 @@
-import json, requests, pathlib, subprocess, tempfile, textwrap, hashlib, sys
+import json, requests, subprocess, textwrap, string, secrets, tempfile
+from pathlib import Path
 
 # Settings
 LIVELY_EXE  = r"C:\Users\aidan\AppData\Local\Programs\Lively Wallpaper\Lively.exe"  # Path to Lively Executable. Change this later to detect path
@@ -24,10 +25,11 @@ def ask_for_location_consent():
     else:
       print("Please enter 'Y' or 'N': ")
 
-# Get user's latitude and longitude using an available API
+# Get user's latitude and longitude using API from ip-api that returns geolocation data for user's public IP
 def get_location():
   response = requests.get("http://ip-api.com/json/", timeout=5) # Temp API
   data = response.json()
+  print(data["city"])
   return float(data["lat"]), float(data["lon"])
 
 # Get weather using user's longitude and latitude using an available API
@@ -39,42 +41,37 @@ def get_weather(lat, lon):
   #return condition
   return "Clear"
 
-# Set wallpaper using Lively via subprocess
-def set_wallpaper(url):
-  # Create a temp HTML file to wrap a URL in
-  tmp_dir = pathlib.Path(tempfile.gettempdir()) / "weather_wp"
-  tmp_dir.mkdir(exist_ok=True)
-  # Hash URL to create filename
-  html_file = tmp_dir / (hashlib.md5(url.encode()).hexdigest() + ".html")
+def generate_lively_id():
+  alphabet = string.ascii_lowercase + string.digits
+  first  = ''.join(secrets.choice(alphabet) for _ in range(8))
+  second = ''.join(secrets.choice(alphabet) for _ in range(3))
+  return f"{first}.{second}"
 
-  # Embed the URL in a fullscreen iframe if HTML file doesn't already exist
-  if not html_file.exists():
-    html_file.write_text(textwrap.dedent(f'''\
-      <!doctype html><html><head><meta charset="utf-8">
-      <style>html,body{{margin:0;height:100%;background:#000}}</style>
-      </head><body>
-      <iframe src="https://www.youtube.com/embed/{url}?autoplay=1&controls=0&mute=1&loop=1&rel=0&playlist={url}"
-              width="100%" height="100%"
-              frameborder="0"
-              allow="autoplay;fullscreen"></iframe>
-      </body></html>
-    '''), encoding="utf-8")
+# Set wallpaper using AHK to re-parent an opened window
+def set_wallpaper(video_id):
+  # Create unique folder in wallpaper path
+  tmp_dir = Path(tempfile.gettempdir()) / "youtube_wallpaper"
+  tmp_dir.mkdir(parents=True, exist_ok=True)
 
-  # CLI arguments
-  args = [
-      LIVELY_EXE,
-      "setwp",
-      "--monitor=0",
-      f"--file={str(html_file.resolve())}"
-  ]
+  # Embed youtube video in HTML wrapper and add to directory
+  index_path = tmp_dir / "index.html"
+  index_html = textwrap.dedent(f'''\
+        <!DOCTYPE html><html><body style="margin:0;background:#000;">
+          <iframe src="https://www.youtube.com/embed/{video_id}?autoplay=1&mute=1&loop=1&controls=0&rel=0&start=5&playlist={video_id}"
+                  allow="autoplay; fullscreen"
+                  style="position:absolute;width:100vw;height:100vh;border:none;">
+          </iframe>
+        </body></html>
+  ''')
+  index_path.write_text(index_html, encoding="utf-8")
 
-  try:
-    subprocess.run(args, check=True)
-    print(f"Wallpaper set to: {url}")
-  except FileNotFoundError:
-    sys.exit("Lively executable not found. Check the LIVELY_EXE path.")
-  except subprocess.CalledProcessError as e:
-    sys.exit(f"Lively failed to apply wallpaper (exit code {e.returncode}).")
+  # 3) Launch Edge in frameless app mode
+  html_url = f"file:///{index_path.resolve().as_posix()}"
+  subprocess.Popen([
+      r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+      f"--app={html_url}",
+      "--start-fullscreen"
+  ])
 
 # Main
 def main():
@@ -94,16 +91,16 @@ def main():
 
   # Get user weather
   try:
-    condition = get_weather(conf["lat"], conf["lon"])
+    condition = get_weather(lat, lon)
     print(f"Current weather: {condition}")
   except Exception as e:
     print("Location error:", e)
     return
 
   # Set wallpaper if found in WALLPAPER_MAP
-  wallpaper_url = WALLPAPER_MAP.get(condition)
-  if wallpaper_url:
-    set_wallpaper(wallpaper_url)
+  wallpaper_id = WALLPAPER_MAP.get(condition)
+  if wallpaper_id:
+    set_wallpaper(wallpaper_id)
   else:
     print("No wallpaper mapped for this condition.")
 
